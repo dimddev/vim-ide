@@ -33,7 +33,7 @@ Plugin 'vim-airline/vim-airline-themes'
 Plugin 'scrooloose/nerdtree.git'
 Plugin 'tpope/vim-surround'
 Plugin 'tpope/vim-sensible'
-Plugin '907th/vim-auto-save'
+" Plugin '907th/vim-auto-save'
 Plugin 'craigemery/vim-autotag'
 Plugin 'kien/ctrlp.vim'
 Plugin 'majutsushi/tagbar'
@@ -65,8 +65,8 @@ let g:ycm_complete_in_comments = 1 " Completion in comments
 let g:ycm_complete_in_strings = 1 " Completion in string
 
 " Auto Save
-let g:auto_save = 1  " enable AutoSave on Vim startup
-let g:auto_save_events = ["InsertLeave", "TextChanged"]
+" let g:auto_save = 1  " enable AutoSave on Vim startup
+" let g:auto_save_events = ["InsertLeave", "TextChanged"]
 :"
 
 " tagbar
@@ -157,12 +157,12 @@ let g:cpp_member_variable_highlight = 1
 let g:cpp_class_decl_highlight = 1
 
 " tabs settings
-nnoremap <C-S-tab> :tabprevious<CR>
-nnoremap <C-tab>   :tabnext<CR>
-nnoremap <C-t>     :tabnew<CR>
-inoremap <C-S-tab> <Esc>:tabprevious<CR>i
-inoremap <C-tab>   <Esc>:tabnext<CR>i
-inoremap <C-t>     <Esc>:tabnew<CR>
+" nnoremap <C-S-tab> :abprevious<CR>
+" nnoremap <C-tab>   :tabnext<CR>
+" nnoremap <C-t>     :tabnew<CR>
+" inoremap <C-S-tab> <Esc>:tabprevious<CR>i
+" inoremap <C-tab>   <Esc>:tabnext<CR>i
+" inoremap <C-t>     <Esc>:tabnew<CR>
 " nnoremap <C-S-tab> :gt<CR>
 " nnoremap <C-tab>   :gT<CR>
 
@@ -170,6 +170,9 @@ inoremap <C-t>     <Esc>:tabnew<CR>
 nnoremap <Leader>p ggvGgq
 nnoremap <Leader>tu 0v$gU
 nnoremap <Leader>tl 0v$gu
+map <F9> :w<CR>:!python %<CR>
+
+" nnoremap <Leader>tt :execute 'tabnew <bar> read !' . &keywordprg . ' ' . expand("<cword>")
 
 " autocmd
 augroup tabsconf
@@ -180,7 +183,7 @@ augroup END
 
 augroup reloadvim
     autocmd!
-    autocmd BufWritePost ~/.vimrc   so ~/.vimrc
+    " autocmd BufWritePost ~/.vimrc   so ~/.vimrc
 augroup END
 
 augroup skeleton
@@ -201,4 +204,33 @@ augroup spellrulez
     autocmd InsertEnter * call SetSpellingColors()
     autocmd InsertLeave * call SetSpellingColors()
     autocmd BufWritePost * call SetSpellingColors()
+augroup END
+
+" Transparent editing of GnuPG-encrypted files
+" Written by Patrick R. McDonald at https://www.antagonism.org/privacy/gpg-vi.shtml
+" Based on a solution by Wouter Hanegraaff
+augroup encrypted
+    au!
+
+    " First make sure nothing is written to ~/.viminfo while editing
+    " an encrypted file.
+    autocmd BufReadPre,FileReadPre      *.gpg,*.asc set viminfo=
+    " We don't want a swap file, as it writes unencrypted data to disk.
+    autocmd BufReadPre,FileReadPre      *.gpg,*.asc set noswapfile
+    " Switch to binary mode to read the encrypted file.
+    autocmd BufReadPre,FileReadPre      *.gpg       set bin
+    autocmd BufReadPre,FileReadPre      *.gpg,*.asc let ch_save = &ch|set ch=2
+    autocmd BufReadPost,FileReadPost    *.gpg,*.asc '[,']!sh -c 'gpg --decrypt 2> /dev/null'
+    " Switch to normal mode for editing
+    autocmd BufReadPost,FileReadPost    *.gpg       set nobin
+    autocmd BufReadPost,FileReadPost    *.gpg,*.asc let &ch = ch_save|unlet ch_save
+    autocmd BufReadPost,FileReadPost    *.gpg,*.asc execute ":doautocmd BufReadPost " . expand("%:r")
+
+    " Convert all text to encrypted text before writing
+    autocmd BufWritePre,FileWritePre    *.gpg set bin
+    autocmd BufWritePre,FileWritePre    *.gpg '[,']!sh -c 'gpg --default-recipient-self -e 2>/dev/null'
+    autocmd BufWritePre,FileWritePre    *.asc '[,']!sh -c 'gpg --default-recipient-self -e -a 2>/dev/null'
+    " Undo the encryption so we are back in the normal text, directly
+    " after the file has been written.
+    autocmd BufWritePost,FileWritePost  *.gpg,*.asc u
 augroup END
